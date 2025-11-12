@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:replace="layout :: layout(~{::content})">
+    <div th:fragment="content">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h1 class="h3">Projects</h1>
+            <a class="btn btn-primary" th:href="@{/projects/new}">New Project</a>
+        </div>
+        <form class="row g-2 mb-3">
+            <div class="col-md-4">
+                <input class="form-control" type="search" name="q" placeholder="Search" th:value="${query}">
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-outline-secondary" type="submit">Search</button>
+            </div>
+        </form>
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Created</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="project : ${projects}">
+                    <td><a th:text="${project.name}" th:href="@{'/projects/' + ${project.id}}"></a></td>
+                    <td th:text="${project.description}">Description</td>
+                    <td th:text="${#temporals.format(project.createdAt, 'dd MMM yyyy HH:mm')}">date</td>
+                    <td class="text-end">
+                        <a th:href="@{'/projects/' + ${project.id} + '/edit'}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                        <form th:action="@{'/projects/' + ${project.id} + '/delete'}" method="post" class="d-inline">
+                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete project?');">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${projects.isEmpty()}">
+                    <td colspan="4" class="text-center text-muted">No projects found</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>
