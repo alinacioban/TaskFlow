@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:replace="layout :: layout(~{::content})">
+    <div th:fragment="content">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h1 class="h3" th:text="${project.name} + ' - Tasks'"></h1>
+                <a class="btn btn-link p-0" th:href="@{'/projects/' + ${project.id}}">Back to project</a>
+            </div>
+            <div>
+                <a class="btn btn-outline-secondary me-2" th:href="@{'/projects/' + ${project.id} + '/board'}">Board</a>
+                <a class="btn btn-primary" th:href="@{'/projects/' + ${project.id} + '/tasks/new'}">New Task</a>
+            </div>
+        </div>
+        <form class="row g-3 mb-4">
+            <input type="hidden" name="sort" th:value="${sort}">
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select class="form-select" name="status">
+                    <option value="">All</option>
+                    <option th:each="s : ${statuses}" th:value="${s}" th:text="${s}" th:selected="${s == status}"></option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Assignee</label>
+                <input class="form-control" type="text" name="assignee" placeholder="username" th:value="${assignee}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Search</label>
+                <input class="form-control" type="text" name="q" th:value="${query}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <div>
+                    <button class="btn btn-outline-secondary me-2" type="submit">Apply</button>
+                    <a class="btn btn-outline-light border" th:href="@{'/projects/' + ${project.id} + '/tasks'}">Reset</a>
+                </div>
+            </div>
+        </form>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                <tr>
+                    <th><a th:href="@{'/projects/' + ${project.id} + '/tasks?(status=' + ${status} + ',assignee=' + ${assignee} + ',q=' + ${query} + ',sort=title)'}">Title</a></th>
+                    <th>Status</th>
+                    <th>Priority</th>
+                    <th>Assignee</th>
+                    <th>Due</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="task : ${tasks}">
+                    <td th:text="${task.title}"></td>
+                    <td th:text="${task.status}"></td>
+                    <td th:text="${task.priority}"></td>
+                    <td th:text="${task.assigneeName} ?: 'Unassigned'"></td>
+                    <td th:text="${task.dueDate}">-</td>
+                    <td class="text-end">
+                        <a class="btn btn-sm btn-outline-primary" th:href="@{'/tasks/' + ${task.id} + '/edit'}">Edit</a>
+                    </td>
+                </tr>
+                <tr th:if="${tasks.isEmpty()}">
+                    <td colspan="6" class="text-center text-muted">No tasks</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>
