@@ -1,46 +1,45 @@
 package com.example.taskhub.domain;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
+import jakarta.persistence.*;
+import lombok.*;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.LocalDate;
 
 @Entity
-@Table(name = "projects")
-@Getter
-@Setter
+@Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Project {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 120)
+    private LocalDate createdAt;
+
+    @PrePersist
+    public void prePersist() {
+    this.createdAt = LocalDate.now();
+    }
+
     private String name;
 
-    @Column(length = 500)
+    @Column(length = 1500)
     private String description;
 
-    @CreationTimestamp
-    private Instant createdAt;
+    private String category;     // IT Category
+    private LocalDate startDate;
+    private LocalDate endDate;
 
-    @OneToMany(mappedBy = "project")
-    @Builder.Default
-    private List<Task> tasks = new ArrayList<>();
+    @Enumerated(EnumType.STRING)
+    private ProjectPriority priority;
+
+    @Enumerated(EnumType.STRING)
+    private ProjectStatus status;
+
+    private String lead;         // Project Leader
+    private String techStack;    // Technologies used
+
+    private String repository;   // GitHub / GitLab link
 }

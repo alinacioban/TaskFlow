@@ -2,6 +2,8 @@ package com.example.taskhub.web;
 
 import com.example.taskhub.domain.Project;
 import com.example.taskhub.domain.Task;
+import com.example.taskhub.domain.ProjectPriority;
+import com.example.taskhub.domain.ProjectStatus;
 import com.example.taskhub.domain.TaskStatus;
 import com.example.taskhub.dto.CommentDTO;
 import com.example.taskhub.dto.ProjectDTO;
@@ -40,6 +42,8 @@ public class ProjectController {
     @GetMapping("/projects/new")
     public String createForm(Model model) {
         model.addAttribute("projectDTO", new ProjectDTO());
+        model.addAttribute("priorities", ProjectPriority.values());
+        model.addAttribute("statuses", ProjectStatus.values());
         return "projects/form";
     }
 
@@ -59,6 +63,8 @@ public class ProjectController {
     public String editForm(@PathVariable Long id, Model model) {
         Project project = projectService.getById(id);
         model.addAttribute("projectDTO", ProjectMapper.toDto(project));
+        model.addAttribute("priorities", ProjectPriority.values());
+        model.addAttribute("statuses", ProjectStatus.values());
         return "projects/form";
     }
 
@@ -86,6 +92,11 @@ public class ProjectController {
     public String detail(@PathVariable Long id, Model model) {
         Project project = projectService.getById(id);
         model.addAttribute("project", project);
+
+        model.addAttribute("priorities", ProjectPriority.values());
+        model.addAttribute("statuses", ProjectStatus.values());
+
+
         var tasks = taskService.listTasks(id, null, null, null, null);
         model.addAttribute("tasks", tasks.stream().map(TaskMapper::toView).toList());
         model.addAttribute("comments", tasks.stream().collect(java.util.stream.Collectors.toMap(

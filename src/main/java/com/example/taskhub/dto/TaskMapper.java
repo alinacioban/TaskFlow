@@ -2,27 +2,55 @@ package com.example.taskhub.dto;
 
 import com.example.taskhub.domain.Task;
 
-public final class TaskMapper {
+public class TaskMapper {
 
-    private TaskMapper() {
+    public static TaskViewDTO toView(Task t) {
+        if (t == null) return null;
+
+        Double est = t.getEstimatedHours();
+        Double log = t.getLoggedHours();
+        Double rem = t.getRemainingHours();
+
+        return TaskViewDTO.builder()
+                .id(t.getId())
+                .projectId(t.getProject().getId())
+                .projectName(t.getProject().getName())
+
+                .title(t.getTitle())
+                .description(t.getDescription())
+
+                // 🔥 aici era eroarea → acum este CORECT
+                .status(t.getStatus().name())
+                .priority(t.getPriority().name())
+                .type(t.getType().name())
+
+                .assigneeName(
+                        t.getAssignee() != null ? t.getAssignee().getFullName() : null
+                )
+
+                .estimatedHours(est)
+                .loggedHours(log)
+                .remainingHours(rem)
+
+                .formattedEstimated(formatHours(est))
+                .formattedLogged(formatHours(log))
+                .formattedRemaining(formatHours(rem))
+
+                .dueDate(t.getDueDate())
+                .createdAt(t.getCreatedAt())
+                .updatedAt(t.getUpdatedAt())
+
+                .build();
     }
 
-    public static TaskViewDTO toView(Task task) {
-        if (task == null) {
-            return null;
-        }
-        return TaskViewDTO.builder()
-                .id(task.getId())
-                .projectId(task.getProject() != null ? task.getProject().getId() : null)
-                .projectName(task.getProject() != null ? task.getProject().getName() : null)
-                .title(task.getTitle())
-                .description(task.getDescription())
-                .status(task.getStatus())
-                .priority(task.getPriority())
-                .assigneeName(task.getAssignee() != null ? task.getAssignee().getFullName() : null)
-                .dueDate(task.getDueDate())
-                .createdAt(task.getCreatedAt())
-                .updatedAt(task.getUpdatedAt())
-                .build();
+    private static String formatHours(Double h) {
+        if (h == null) return "-";
+
+        int total = (int) Math.round(h * 60);
+        int hours = total / 60;
+        int minutes = total % 60;
+
+        if (minutes == 0) return hours + "h";
+        return hours + "h " + minutes + "m";
     }
 }

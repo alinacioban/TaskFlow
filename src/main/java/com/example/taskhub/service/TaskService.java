@@ -1,13 +1,10 @@
 package com.example.taskhub.service;
 
-import com.example.taskhub.domain.Comment;
-import com.example.taskhub.domain.Project;
-import com.example.taskhub.domain.Task;
-import com.example.taskhub.domain.TaskPriority;
-import com.example.taskhub.domain.TaskStatus;
-import com.example.taskhub.domain.User;
+import com.example.taskhub.domain.*;
 import com.example.taskhub.dto.TaskCreateDTO;
+import com.example.taskhub.dto.TaskMapper;
 import com.example.taskhub.dto.TaskUpdateDTO;
+import com.example.taskhub.dto.TaskViewDTO;
 import com.example.taskhub.exception.NotFoundException;
 import com.example.taskhub.exception.ValidationException;
 import com.example.taskhub.repo.CommentRepository;
@@ -21,8 +18,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,140 +29,225 @@ public class TaskService {
     private final UserRepository userRepository;
     private final CommentRepository commentRepository;
 
+    // ---------------------------
+    // GET
+    // ---------------------------
     public Task getById(Long id) {
-        Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Task not found"));
-        initialize(task);
-        return task;
+        return taskRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Task-ul nu există"));
     }
 
-    public List<Task> listTasks(Long projectId, TaskStatus status, String assigneeUsername, String query, String sort) {
+    // ---------------------------
+    // LIST (compatibil 100% cu ProjectController)
+    // ---------------------------
+    public List<Task> listTasks(
+            Long projectId,
+            TaskStatus status,
+            String assignee,
+            String query,
+            String sort
+    ) {
         List<Task> tasks = taskRepository.findByProjectId(projectId);
+
         if (query != null && !query.isBlank()) {
             String term = query.toLowerCase(Locale.ROOT);
             tasks = tasks.stream()
-                    .filter(task -> containsIgnoreCase(task.getTitle(), term) || containsIgnoreCase(task.getDescription(), term))
-                    .collect(Collectors.toList());
+                    .filter(t ->
+                            (t.getTitle() != null && t.getTitle().toLowerCase().contains(term)) ||
+                            (t.getDescription() != null && t.getDescription().toLowerCase().contains(term))
+                    )
+                    .toList();
         }
+
         if (status != null) {
             tasks = tasks.stream()
-                    .filter(task -> task.getStatus() == status)
-                    .collect(Collectors.toList());
+                    .filter(t -> t.getStatus() == status)
+                    .toList();
         }
-        if (assigneeUsername != null && !assigneeUsername.isBlank()) {
-            String usernameLower = assigneeUsername.toLowerCase(Locale.ROOT);
+
+        if (assignee != null && !assignee.isBlank()) {
+            String a = assignee.toLowerCase();
             tasks = tasks.stream()
-                    .filter(task -> task.getAssignee() != null && task.getAssignee().getUsername() != null
-                            && task.getAssignee().getUsername().toLowerCase(Locale.ROOT).equals(usernameLower))
-                    .collect(Collectors.toList());
+                    .filter(t -> t.getAssignee() != null &&
+                            t.getAssignee().getUsername() != null &&
+                            t.getAssignee().getUsername().equalsIgnoreCase(a))
+                    .toList();
         }
-        tasks = sortTasks(tasks, sort);
-        tasks.forEach(this::initialize);
+
+        if (sort != null) {
+            switch (sort) {
+                case "priority" ->
+                        tasks = tasks.stream()
+                                .sorted(Comparator.comparing(t -> t.getPriority().ordinal()))
+                                .toList();
+
+                case "dueDate" ->
+                        tasks = tasks.stream()
+                                .sorted(Comparator.comparing(Task::getDueDate,
+                                        Comparator.nullsLast(Comparator.naturalOrder())))
+                                .toList();
+
+                case "title" ->
+                        tasks = tasks.stream()
+                                .sorted(Comparator.comparing(Task::getTitle,
+                                        Comparator.nullsLast(String::compareToIgnoreCase)))
+                                .toList();
+            }
+        }
+
         return tasks;
     }
 
-    private boolean containsIgnoreCase(String source, String term) {
-        return source != null && source.toLowerCase(Locale.ROOT).contains(term);
-    }
-
-    private List<Task> sortTasks(List<Task> tasks, String sort) {
-        if (sort == null || sort.isBlank()) {
-            return tasks.stream()
-                    .sorted(Comparator.comparing(Task::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())))
-                    .collect(Collectors.toList());
-        }
-        Comparator<Task> comparator;
-        switch (sort) {
-            case "dueDate" -> comparator = Comparator.comparing(Task::getDueDate, Comparator.nullsLast(Comparator.naturalOrder()));
-            case "priority" -> comparator = Comparator.comparingInt((Task task) -> task.getPriority() != null ? task.getPriority().ordinal() : TaskPriority.values().length)
-                    .thenComparing(Task::getTitle, Comparator.nullsLast(String::compareToIgnoreCase));
-            case "title" -> comparator = Comparator.comparing(Task::getTitle, Comparator.nullsLast(String::compareToIgnoreCase));
-            default -> comparator = Comparator.comparing(Task::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder()));
-        }
-        return tasks.stream().sorted(comparator).collect(Collectors.toList());
-    }
-
+    // ---------------------------
+    // CREATE
+    // ---------------------------
     @Transactional
     public Task create(Long projectId, TaskCreateDTO dto) {
+
         Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new NotFoundException("Project not found"));
-        User assignee = resolveAssignee(dto.getAssigneeId());
-        Task task = Task.builder()
-                .project(project)
-                .title(dto.getTitle())
-                .description(dto.getDescription())
-                .priority(Objects.requireNonNullElse(dto.getPriority(), TaskPriority.MEDIUM))
-                .status(TaskStatus.TODO)
-                .assignee(assignee)
-                .dueDate(dto.getDueDate())
-                .build();
-        return taskRepository.save(task);
+                .orElseThrow(() -> new NotFoundException("Proiectul nu există"));
+
+        Task t = new Task();
+        t.setProject(project);
+
+        t.setTitle(dto.getTitle());
+        t.setDescription(dto.getDescription());
+
+        t.setPriority(dto.getPriority() != null ? TaskPriority.valueOf(dto.getPriority()) : TaskPriority.MEDIUM);
+        t.setStatus(TaskStatus.TODO);
+        t.setType(dto.getType() != null ? TaskType.valueOf(dto.getType()) : TaskType.TASK);
+
+        t.setEstimatedHours(dto.getEstimatedHours());
+        t.setLoggedHours(dto.getLoggedHours() != null ? dto.getLoggedHours() : 0.0);
+        t.setRemainingHours(dto.getRemainingHours());
+
+        t.setLabels(dto.getLabels());
+        t.setComponents(dto.getComponents());
+        t.setSprint(dto.getSprint());
+
+        t.setAssignee(resolveUser(dto.getAssigneeId()));
+        t.setReporter(resolveUser(dto.getReporterId()));
+
+        t.setDueDate(dto.getDueDate());
+
+        return taskRepository.save(t);
     }
 
+    // ---------------------------
+    // UPDATE
+    // ---------------------------
     @Transactional
-    public Task update(Long taskId, TaskUpdateDTO dto) {
-        Task task = getById(taskId);
-        task.setTitle(dto.getTitle());
-        task.setDescription(dto.getDescription());
-        task.setPriority(dto.getPriority());
-        task.setStatus(dto.getStatus());
-        task.setAssignee(resolveAssignee(dto.getAssigneeId()));
-        task.setDueDate(dto.getDueDate());
-        return taskRepository.save(task);
+    public Task update(Long id, TaskUpdateDTO dto) {
+        Task t = getById(id);
+
+        if (dto.getTitle() != null) t.setTitle(dto.getTitle());
+        if (dto.getDescription() != null) t.setDescription(dto.getDescription());
+
+        if (dto.getPriority() != null) t.setPriority(TaskPriority.valueOf(dto.getPriority()));
+        if (dto.getStatus() != null) t.setStatus(TaskStatus.valueOf(dto.getStatus()));
+        if (dto.getType() != null) t.setType(TaskType.valueOf(dto.getType()));
+
+        if (dto.getEstimatedHours() != null) t.setEstimatedHours(dto.getEstimatedHours());
+        if (dto.getLoggedHours() != null) t.setLoggedHours(dto.getLoggedHours());
+        if (dto.getRemainingHours() != null) t.setRemainingHours(dto.getRemainingHours());
+
+        t.setAssignee(resolveUser(dto.getAssigneeId()));
+        t.setReporter(resolveUser(dto.getReporterId()));
+
+        t.setLabels(dto.getLabels());
+        t.setComponents(dto.getComponents());
+        t.setSprint(dto.getSprint());
+
+        t.setDueDate(dto.getDueDate());
+
+        return taskRepository.save(t);
     }
 
+    // ---------------------------
+    // DELETE
+    // ---------------------------
     @Transactional
-    public void delete(Long taskId) {
-        if (!taskRepository.existsById(taskId)) {
-            throw new NotFoundException("Task not found");
+    public void delete(Long id) {
+        if (!taskRepository.existsById(id)) {
+            throw new NotFoundException("Task-ul nu există");
         }
-        taskRepository.deleteById(taskId);
+        taskRepository.deleteById(id);
     }
-
+    
+    // ---------------------------
+    // LOG HOURS
+    // ---------------------------
     @Transactional
-    public Task changeStatus(Long taskId, TaskStatus newStatus) {
-        if (newStatus == null) {
-            throw new ValidationException("Status is required");
-        }
-        Task task = getById(taskId);
-        TaskStatus current = task.getStatus();
-        if (current == TaskStatus.DONE && newStatus != TaskStatus.DONE) {
-            throw new ValidationException("Cannot move task out of DONE state");
-        }
-        task.setStatus(newStatus);
-        return taskRepository.save(task);
+    public void logHours(Long id, double hours) {
+        Task t = getById(id);
+
+        double logged = t.getLoggedHours() != null ? t.getLoggedHours() : 0;
+        double remaining = t.getRemainingHours() != null ? t.getRemainingHours() : 0;
+
+        t.setLoggedHours(logged + hours);
+        t.setRemainingHours(Math.max(remaining - hours, 0));
+
+        taskRepository.save(t);
     }
 
-    @Transactional
-    public Comment addComment(Long taskId, Long authorId, String content) {
-        if (content == null || content.isBlank()) {
-            throw new ValidationException("Comment content cannot be empty");
-        }
-        Task task = getById(taskId);
-        User author = userRepository.findById(authorId)
-                .orElseThrow(() -> new NotFoundException("Author not found"));
-        Comment comment = Comment.builder()
-                .task(task)
-                .author(author)
-                .content(content)
-                .build();
-        return commentRepository.save(comment);
+    // ---------------------------
+    // COMMENTS
+    // ---------------------------
+@Transactional
+public Comment addComment(Long taskId, Long authorId, String content) {
+
+    if (content == null || content.isBlank()) {
+        throw new ValidationException("Comentariul nu poate fi gol");
     }
 
-    private User resolveAssignee(Long assigneeId) {
-        if (assigneeId == null) {
-            return null;
-        }
-        return userRepository.findById(assigneeId)
-                .orElseThrow(() -> new ValidationException("Assignee not found"));
+    Task task = getById(taskId);
+    User author = resolveUser(authorId);
+
+    Comment comment = Comment.builder()
+            .task(task)
+            .author(author)   // <-- AICI ESTE FIX-UL
+            .content(content)
+            .build();
+
+    return commentRepository.save(comment);
     }
 
-    private void initialize(Task task) {
-        if (task.getProject() != null) {
-            task.getProject().getName();
-        }
-        if (task.getAssignee() != null) {
-            task.getAssignee().getFullName();
-        }
+    public void changeStatus(Long taskId, TaskStatus newStatus) {
+    Task task = taskRepository.findById(taskId)
+            .orElseThrow(() -> new IllegalArgumentException("Task not found"));
+
+    task.setStatus(newStatus);
+    taskRepository.save(task);
+}
+
+    // ---------------------------
+    // Helper
+    // ---------------------------
+    private User resolveUser(Long id) {
+        if (id == null) return null;
+        return userRepository.findById(id)
+                .orElseThrow(() -> new ValidationException("User-ul nu există"));
     }
+
+    // ===============================
+// LOAD SIDEBAR (pentru controller)
+// ===============================
+public record SidebarTaskData(
+        TaskViewDTO task,
+        List<Comment> comments
+) {}
+
+public SidebarTaskData loadSidebar(Long taskId) {
+
+    Task t = getById(taskId);
+
+    // convertim task-ul în DTO
+    TaskViewDTO dto = TaskMapper.toView(t);
+
+    // luăm comentariile pentru sidebar
+    List<Comment> comments = commentRepository.findByTaskIdOrderByCreatedAtAsc(taskId);
+
+    return new SidebarTaskData(dto, comments);
+}
+
 }

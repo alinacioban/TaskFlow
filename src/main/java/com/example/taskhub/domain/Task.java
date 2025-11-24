@@ -1,34 +1,15 @@
 package com.example.taskhub.domain;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import jakarta.persistence.*;
+import lombok.*;
+import org.springframework.format.annotation.DateTimeFormat;
 
-import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "tasks")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -40,38 +21,61 @@ public class Task {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "project_id")
-    private Project project;
-
-    @Column(nullable = false, length = 150)
     private String title;
 
-    @Column(length = 1000)
+    @Column(length = 2000)
     private String description;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 30)
-    private TaskStatus status;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 30)
     private TaskPriority priority;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assignee_id")
+    @Enumerated(EnumType.STRING)
+    private TaskStatus status;
+
+    @ManyToOne
     private User assignee;
 
-    @Temporal(TemporalType.DATE)
+    @ManyToOne
+    private User reporter;
+
+    @ManyToOne
+    private Project project;
+
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
     private LocalDate dueDate;
 
-    @CreationTimestamp
-    private Instant createdAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
-    @UpdateTimestamp
-    private Instant updatedAt;
+    @Enumerated(EnumType.STRING)
+    private TaskType type;
 
-    @OneToMany(mappedBy = "task")
-    @Builder.Default
+    private String labels;
+    private String components;
+    private String sprint;
+
+    // HOURS — not minutes
+    private Double estimatedHours;
+    private Double loggedHours;
+    private Double remainingHours;
+
+    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments = new ArrayList<>();
+
+    @PrePersist
+    public void prePersist() {
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+
+        if (status == null) status = TaskStatus.TODO;
+        if (priority == null) priority = TaskPriority.MEDIUM;
+        if (type == null) type = TaskType.TASK;
+
+        if (loggedHours == null) loggedHours = 0.0;
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

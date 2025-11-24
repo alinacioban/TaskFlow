@@ -1,29 +1,33 @@
 package com.example.taskhub.dto;
 
-import com.example.taskhub.domain.TaskPriority;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
-import lombok.Data;
-import org.springframework.format.annotation.DateTimeFormat;
-
+import lombok.Getter;
+import lombok.Setter;
 import java.time.LocalDate;
 
-@Data
+@Getter
+@Setter
 public class TaskCreateDTO {
 
+    private Long projectId;
+
     @NotBlank
-    @Size(max = 150)
     private String title;
 
-    @Size(max = 1000)
     private String description;
-
-    @NotNull
-    private TaskPriority priority = TaskPriority.MEDIUM;
+    private String priority;
+    private String type;
 
     private Long assigneeId;
+    private Long reporterId;
 
-    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    private String labels;
+    private String components;
+    private String sprint;
+
+    private Double estimatedHours;
+    private Double loggedHours;
+    private Double remainingHours;
+
     private LocalDate dueDate;
 }

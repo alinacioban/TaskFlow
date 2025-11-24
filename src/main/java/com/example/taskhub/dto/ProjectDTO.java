@@ -1,17 +1,26 @@
 package com.example.taskhub.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import com.example.taskhub.domain.ProjectPriority;
+import com.example.taskhub.domain.ProjectStatus;
 import lombok.Data;
+
+import java.time.LocalDate;
 
 @Data
 public class ProjectDTO {
+
     private Long id;
-
-    @NotBlank
-    @Size(max = 120)
     private String name;
-
-    @Size(max = 500)
     private String description;
+    private String category;
+
+    private LocalDate startDate;
+    private LocalDate endDate;
+
+    private ProjectPriority priority;
+    private ProjectStatus status;
+
+    private String lead;
+    private String techStack;
+    private String repository;
 }

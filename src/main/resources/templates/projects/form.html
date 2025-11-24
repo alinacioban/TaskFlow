@@ -1,29 +1,153 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
-<body>
-<div th:replace="layout :: layout(~{::content})">
-    <div class="row justify-content-center" th:fragment="content">
-        <div class="col-lg-6">
-            <h1 class="h3 mb-3" th:text="${projectDTO.id} != null ? 'Edit Project' : 'New Project'"></h1>
-            <form th:action="${projectDTO.id} != null ? @{'/projects/' + ${projectDTO.id}} : @{/projects}" th:object="${projectDTO}" method="post" class="card card-body">
-                <div class="mb-3">
-                    <label class="form-label" for="name">Name</label>
-                    <input class="form-control" id="name" type="text" th:field="*{name}">
-                    <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
-                </div>
-                <div class="mb-3">
-                    <label class="form-label" for="description">Description</label>
-                    <textarea class="form-control" id="description" rows="4" th:field="*{description}"></textarea>
-                    <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></div>
-                </div>
-                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                <div class="d-flex justify-content-between">
-                    <a th:href="${projectDTO.id} != null ? @{'/projects/' + ${projectDTO.id}} : @{/projects}" class="btn btn-outline-secondary">Cancel</a>
-                    <button class="btn btn-primary" type="submit">Save</button>
-                </div>
-            </form>
-        </div>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: base(
+          ${projectDTO.id}!=null?'Editează Proiect · TaskFlow':'Proiect Nou · TaskFlow',
+          'projects',
+          ~{::content}
+      )}">
+
+<th:block th:fragment="content">
+
+  <!-- HEADER -->
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <div class="d-flex align-items-center gap-2">
+      <img th:src="@{/img/LOGO_TASKFLOW.png}" alt="logo" width="28" height="28" class="rounded-2">
+      <h1 class="h5 mb-0" th:text="${projectDTO.id}!=null?'Editează Proiect':'Proiect Nou'">Proiect Nou</h1>
     </div>
-</div>
-</body>
+
+    <a class="btn btn-outline-secondary" th:href="@{/projects}">
+      <i class="bi bi-arrow-left me-1"></i> Înapoi
+    </a>
+  </div>
+
+  <!-- FORMULAR -->
+  <form th:action="${projectDTO.id}!=null ? @{'/projects/' + ${projectDTO.id}} : @{/projects}"
+        th:object="${projectDTO}"
+        method="post"
+        class="card p-4 shadow-sm needs-validation"
+        novalidate>
+
+    <input type="hidden" th:field="*{id}"/>
+
+    <div class="row g-3">
+
+      <!-- NUME PROIECT -->
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Nume Proiect</label>
+        <input class="form-control" th:field="*{name}" required maxlength="120">
+        <div class="invalid-feedback">Numele proiectului este obligatoriu.</div>
+      </div>
+
+      <!-- CATEGORIE -->
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Categorie (IT)</label>
+        <select class="form-select" th:field="*{category}">
+          
+          <option value="">Selectează categoria</option>
+
+          <optgroup label="💻 Development">
+            <option value="Software Development">Software Development</option>
+            <option value="QA / Testing">QA / Testing</option>
+          </optgroup>
+
+          <optgroup label="☁️ Cloud & DevOps">
+            <option value="DevOps">DevOps</option>
+            <option value="Cloud Engineering">Cloud Engineering</option>
+            <option value="IT Automation">IT Automation</option>
+          </optgroup>
+
+          <optgroup label="🧠 Data & AI">
+            <option value="Data Engineering">Data Engineering</option>
+            <option value="Machine Learning / AI">Machine Learning / AI</option>
+          </optgroup>
+
+          <optgroup label="🏗️ Infrastructure">
+            <option value="Infrastructure">Infrastructure</option>
+            <option value="Networking">Networking</option>
+            <option value="System Administration">System Administration</option>
+          </optgroup>
+
+          <optgroup label="🔐 Security">
+            <option value="Cybersecurity">Cybersecurity</option>
+          </optgroup>
+
+          <optgroup label="📊 Operations">
+            <option value="Observability & Monitoring">Observability & Monitoring</option>
+            <option value="IT Operations">IT Operations</option>
+            <option value="IT Support">IT Support</option>
+          </optgroup>
+
+        </select>
+      </div>
+
+      <!-- DESCRIERE -->
+      <div class="col-12">
+        <label class="form-label fw-semibold">Descriere</label>
+        <textarea class="form-control" th:field="*{description}" rows="4" maxlength="1500"></textarea>
+      </div>
+
+      <!-- DATE -->
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Data de început</label>
+        <input type="date" class="form-control" th:field="*{startDate}">
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Data de finalizare</label>
+        <input type="date" class="form-control" th:field="*{endDate}">
+      </div>
+
+      <!-- PRIORITATE -->
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Prioritate</label>
+        <select class="form-select" th:field="*{priority}">
+        <option th:each="p : ${priorities}"
+            th:value="${p}"
+            th:text="${p}"></option>
+</select>
+      </div>
+
+      <!-- STATUS -->
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Status</label>
+        <select class="form-select" th:field="*{status}">
+          <option th:each="s : ${statuses}"
+            th:value="${s}"
+            th:text="${s}"></option>
+        </select>
+      </div>
+
+      <!-- PROJECT LEAD -->
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Manager Proiect</label>
+        <input class="form-control" th:field="*{lead}" placeholder="ex: Maria Cioban">
+      </div>
+
+      <!-- TECH STACK -->
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Tehnologii utilizate</label>
+        <input class="form-control" th:field="*{techStack}" placeholder="ex: Java, Spring, Docker, AWS">
+      </div>
+
+      <!-- REPOSITORY -->
+      <div class="col-12">
+        <label class="form-label fw-semibold">Link Repository</label>
+        <input class="form-control" type="url" th:field="*{repository}" placeholder="https://github.com/...">
+      </div>
+
+    </div>
+
+    <!-- BUTTONS -->
+    <div class="d-flex gap-2 mt-4">
+      <button class="btn btn-primary px-4">
+        <i class="bi bi-check2 me-1"></i>
+        <span th:text="${projectDTO.id}!=null?'Salvează Modificările':'Creează Proiect'"></span>
+      </button>
+
+      <a class="btn btn-outline-secondary" th:href="@{/projects}">Anulează</a>
+    </div>
+  </form>
+
+</th:block>
+
 </html>

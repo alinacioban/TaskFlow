@@ -1,0 +1,23 @@
+:root { --tf-accent: #6f42c1; }
+
+.text-primary { color: var(--tf-accent) !important; }
+.btn-primary { background-color: var(--tf-accent); border-color: var(--tf-accent); }
+.btn-primary:hover { filter: brightness(0.95); }
+
+.card { border-radius: 16px; }
+.table thead th { font-weight: 600; }
+
+.badge-prio-high { background: #dc3545; }
+.badge-prio-medium { background: #fd7e14; }
+.badge-prio-low { background: #198754; }
+
+.empty-state {
+  padding: 3rem 1rem;
+  color: #6c757d;
+}
+:root { --tf-accent:#6f42c1; }
+.text-primary { color: var(--tf-accent)!important; }
+.btn-primary { background:var(--tf-accent); border-color:var(--tf-accent); }
+.btn-primary:hover { filter:brightness(.95); }
+.card { border-radius:16px; }
+.badge-prio-high{background:#dc3545}.badge-prio-medium{background:#fd7e14}.badge-prio-low{background:#198754}

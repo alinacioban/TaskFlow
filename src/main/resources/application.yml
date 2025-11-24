@@ -1,22 +1,27 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:taskhub;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    url: jdbc:h2:file:./data/taskhubdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     driverClassName: org.h2.Driver
     username: sa
-    password: sa
+    password: sa 
+
   h2:
     console:
       enabled: true
       path: /h2-console
+
   jpa:
     hibernate:
       ddl-auto: update
-    open-in-view: false
+    defer-datasource-initialization: true 
     properties:
       hibernate:
         format_sql: true
+
+  sql:
+    init:
+      mode: always   # permite rularea data.sql doar dacă tabela nu există
+      continue-on-error: true
+
   thymeleaf:
     cache: false
-logging:
-  level:
-    org.springframework.security: INFO
