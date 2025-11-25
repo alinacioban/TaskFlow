@@ -18,7 +18,7 @@ public class TaskSidebarController {
     private final TaskService taskService;
 
     // ---------------------------------------------------------
-    // SIDEBAR VIEW
+    // LOAD SIDEBAR CONTENT (HTML FRAGMENT)
     // ---------------------------------------------------------
     @GetMapping
     public String sidebar(@PathVariable Long id, Model model) {
@@ -32,13 +32,13 @@ public class TaskSidebarController {
     }
 
     // ---------------------------------------------------------
-    // LOG HOURS — no conflict with TaskController anymore
+    // LOG HOURS
     // ---------------------------------------------------------
     @PostMapping("/log")
     @ResponseBody
     public String logHours(
             @PathVariable Long id,
-            @RequestParam("hours") double hours
+            @RequestParam double hours
     ) {
         taskService.logHours(id, hours);
         return "OK";
@@ -51,9 +51,9 @@ public class TaskSidebarController {
     @ResponseBody
     public String changeStatus(
             @PathVariable Long id,
-            @RequestParam("value") String status
+            @RequestParam String value
     ) {
-        taskService.changeStatus(id, TaskStatus.valueOf(status));
+        taskService.changeStatus(id, TaskStatus.valueOf(value));
         return "OK";
     }
 
@@ -79,7 +79,8 @@ public class TaskSidebarController {
             @PathVariable Long id,
             @RequestParam("content") String content
     ) {
-        taskService.addComment(id, 1L, content); // TODO: user logat
+        // TODO: înlocuiește 1L cu user-ul logat
+        taskService.addComment(id, 1L, content);
         return "OK";
     }
 }

@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: base(
+            'Kanban – Toate Task-urile',
+            'kanban',
+            ~{::content}
+      )}">
+
+<th:block th:fragment="content">
+
+    <style>
+        .kanban-col {
+            background: #f7f9fc;
+            border-radius: 12px;
+            padding: 12px;
+            height: calc(100vh - 220px);
+            overflow-y: auto;
+        }
+
+        .task-card {
+            background: white;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            border: 1px solid #e1e4e8;
+            transition: 0.15s;
+        }
+        .task-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+        }
+
+        #taskSidebar {
+            position: fixed;
+            top: 0;
+            right: -500px;
+            width: 480px;
+            height: 100vh;
+            background: white;
+            box-shadow: -3px 0 12px rgba(0,0,0,0.2);
+            transition: right 0.3s ease;
+            padding: 25px;
+            overflow-y: auto;
+            z-index: 9999;
+        }
+        #taskSidebar.open { right: 0; }
+        #sidebarClose {
+            border: none;
+            background: none;
+            font-size: 22px;
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            cursor: pointer;
+        }
+    </style>
+
+
+    <h2 class="fw-bold mb-4">Kanban – Toate Task-urile</h2>
+
+    <!-- FILTRE -->
+    <form method="get" class="row g-3 mb-4">
+
+        <div class="col-md-3">
+            <label class="form-label">Proiect</label>
+            <select class="form-select" name="projectId">
+                <option value="">Toate</option>
+                <option th:each="p : ${projects}"
+                        th:value="${p.id}"
+                        th:text="${p.name}"
+                        th:selected="${selectedProject == p.id}">
+                </option>
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Assignee</label>
+            <select class="form-select" name="assigneeId">
+                <option value="">Toți</option>
+                <option th:each="u : ${users}"
+                        th:value="${u.id}"
+                        th:text="${u.fullName}"
+                        th:selected="${selectedAssignee == u.id}">
+                </option>
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Prioritate</label>
+            <select class="form-select" name="priority">
+                <option value="">Toate</option>
+                <option th:each="prio : ${priorities}"
+                        th:value="${prio}"
+                        th:text="${prio}"
+                        th:selected="${selectedPriority == prio}">
+                </option>
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Status</label>
+            <select class="form-select" name="status">
+                <option value="">Toate</option>
+                <option th:each="s : ${statuses}"
+                        th:value="${s}"
+                        th:text="${s}"
+                        th:selected="${selectedStatus == s}">
+                </option>
+            </select>
+        </div>
+
+        <div class="col-12 text-end">
+            <button class="btn btn-primary">Aplică filtre</button>
+        </div>
+    </form>
+
+
+    <!-- BOARD -->
+    <div class="row g-3">
+
+        <!-- TODO -->
+        <div class="col-md-4">
+            <h5 class="fw-semibold">To Do</h5>
+            <div id="col-todo" class="kanban-col">
+                <div th:each="t : ${todo}"
+                     class="task-card"
+                     th:attr="data-id=${t.id}"
+                     onclick="openSidebar(this)">
+                    <div class="fw-bold" th:text="${t.title}"></div>
+                    <div class="small text-muted" th:text="${t.projectName}"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- IN PROGRESS -->
+        <div class="col-md-4">
+            <h5 class="fw-semibold">In Progress</h5>
+            <div id="col-inprogress" class="kanban-col">
+                <div th:each="t : ${inprogress}"
+                     class="task-card"
+                     th:attr="data-id=${t.id}"
+                     onclick="openSidebar(this)">
+                    <div class="fw-bold" th:text="${t.title}"></div>
+                    <div class="small text-muted" th:text="${t.projectName}"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DONE -->
+        <div class="col-md-4">
+            <h5 class="fw-semibold">Done</h5>
+            <div id="col-done" class="kanban-col">
+                <div th:each="t : ${done}"
+                     class="task-card"
+                     th:attr="data-id=${t.id}"
+                     onclick="openSidebar(this)">
+                    <div class="fw-bold" th:text="${t.title}"></div>
+                    <div class="small text-muted" th:text="${t.projectName}"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- SIDEBAR -->
+    <div id="taskSidebar">
+        <button id="sidebarClose" onclick="closeSidebar()">×</button>
+        <div id="sidebarContent"></div>
+    </div>
+
+
+    <!-- SORTABLEJS -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+
+    <script>
+        ["col-todo", "col-inprogress", "col-done"].forEach(colId => {
+            new Sortable(document.getElementById(colId), {
+                group: "tasks",
+                animation: 150,
+                onEnd: e => {
+                    const taskId = e.item.dataset.id;
+                    const newStatus =
+                        colId === "col-todo" ? "TODO" :
+                        colId === "col-inprogress" ? "IN_PROGRESS" :
+                        "DONE";
+
+                    fetch(`/tasks/${taskId}/status?value=${newStatus}`, { method: "POST" });
+                }
+            });
+        });
+
+        function openSidebar(el) {
+            const id = el.dataset.id;
+            fetch(`/tasks/${id}/sidebar`)
+                .then(r => r.text())
+                .then(html => {
+                    document.getElementById("sidebarContent").innerHTML = html;
+                    document.getElementById("taskSidebar").classList.add("open");
+                });
+        }
+
+        function closeSidebar() {
+            document.getElementById("taskSidebar").classList.remove("open");
+        }
+    </script>
+
+</th:block>
+</html>

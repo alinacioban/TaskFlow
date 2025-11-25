@@ -11,6 +11,7 @@ import com.example.taskhub.repo.CommentRepository;
 import com.example.taskhub.repo.ProjectRepository;
 import com.example.taskhub.repo.TaskRepository;
 import com.example.taskhub.repo.UserRepository;
+import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -250,4 +251,33 @@ public SidebarTaskData loadSidebar(Long taskId) {
     return new SidebarTaskData(dto, comments);
 }
 
+// ---------------------------
+// UPDATE ONLY DUE DATE
+// ---------------------------
+@Transactional
+public void updateDueDate(Long id, LocalDate newDueDate) {
+    Task task = getById(id);
+    task.setDueDate(newDueDate);
+    taskRepository.save(task);
+}
+
+public List<Task> filterTasks(
+        Long projectId,
+        Long assigneeId,
+        TaskPriority priority,
+        TaskStatus status
+) {
+
+    return taskRepository.findAll().stream()
+            .filter(t -> projectId == null || t.getProject().getId().equals(projectId))
+            .filter(t -> assigneeId == null || (t.getAssignee() != null &&
+                                                t.getAssignee().getId().equals(assigneeId)))
+            .filter(t -> priority == null || t.getPriority() == priority)
+            .filter(t -> status == null || t.getStatus() == status)
+            .toList();
+}
+
+public List<Task> findAll() {
+    return taskRepository.findAll();
+}
 }

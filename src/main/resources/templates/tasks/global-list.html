@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ro" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: base(
+            'Toate task-urile · TaskHub',
+            'tasks',
+            ~{::content}
+      )}">
+
+<th:block th:fragment="content">
+
+<h1 class="h4 fw-bold mb-4">Toate task-urile</h1>
+
+<div class="table-responsive bg-white rounded shadow-sm p-3">
+
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th>Titlu</th>
+                <th>Proiect</th>
+                <th>Status</th>
+                <th>Prioritate</th>
+                <th>Responsabil</th>
+                <th>Data limită</th>
+                <th class="text-end">Acțiuni</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+        <tr th:each="t : ${tasks}">
+            <td th:text="${t.title}"></td>
+
+            <td th:text="${t.projectName}"></td>
+
+            <td>
+                <span class="badge bg-secondary" th:text="${t.status}"></span>
+            </td>
+
+            <td th:text="${t.priority}"></td>
+
+            <td th:text="${t.assigneeName != null ? t.assigneeName : 'Nealocat'}"></td>
+
+            <td th:text="${t.dueDate != null ? t.dueDate : '-'}"></td>
+
+            <td class="text-end">
+                <a class="btn btn-sm btn-outline-primary"
+                   th:href="@{'/tasks/' + ${t.id} + '/edit'}">
+                    Editează
+                </a>
+            </td>
+        </tr>
+
+        <tr th:if="${tasks.isEmpty()}">
+            <td colspan="7" class="py-4 text-center text-muted">
+                Nu există task-uri în sistem.
+            </td>
+        </tr>
+
+        </tbody>
+    </table>
+
+</div>
+
+</th:block>
+</html>

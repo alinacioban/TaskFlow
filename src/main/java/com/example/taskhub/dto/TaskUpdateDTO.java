@@ -2,10 +2,12 @@ package com.example.taskhub.dto;
 
 import com.example.taskhub.domain.Task;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 
 @Data
+@NoArgsConstructor
 public class TaskUpdateDTO {
 
     private Long id;
@@ -32,8 +34,16 @@ public class TaskUpdateDTO {
     private LocalDate dueDate;
 
     public TaskUpdateDTO(Task t) {
+
+        if (t == null) {
+            return; // 👈 FIX: evităm NullPointerException
+        }
+
         this.id = t.getId();
-        this.projectId = t.getProject().getId();
+
+        if (t.getProject() != null) {
+            this.projectId = t.getProject().getId();
+        }
 
         this.title = t.getTitle();
         this.description = t.getDescription();
@@ -46,12 +56,12 @@ public class TaskUpdateDTO {
         this.components = t.getComponents();
         this.sprint = t.getSprint();
 
-        this.type = t.getType().name();
-        this.priority = t.getPriority().name();
-        this.status = t.getStatus().name();
+        if (t.getType() != null) this.type = t.getType().name();
+        if (t.getPriority() != null) this.priority = t.getPriority().name();
+        if (t.getStatus() != null) this.status = t.getStatus().name();
 
-        this.assigneeId = t.getAssignee() != null ? t.getAssignee().getId() : null;
-        this.reporterId = t.getReporter() != null ? t.getReporter().getId() : null;
+        this.assigneeId = (t.getAssignee() != null) ? t.getAssignee().getId() : null;
+        this.reporterId = (t.getReporter() != null) ? t.getReporter().getId() : null;
 
         this.dueDate = t.getDueDate();
     }

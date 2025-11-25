@@ -2,7 +2,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 
-<!-- Fragment sidebar -->
 <th:block th:fragment="sidebarContent">
 
 <div id="sidebarContent">
@@ -11,7 +10,6 @@
         .sidebar-title { font-size: 20px; font-weight: 600; }
         .sidebar-section { margin-top: 22px; }
         .sidebar-label { font-weight: 600; margin-bottom: 6px; }
-
         .time-badge {
             background: #eef1f6;
             padding: 4px 8px;
@@ -20,18 +18,13 @@
             font-weight: 600;
             margin-right: 5px;
         }
-
         .comment-box {
             background: #f8f9fa;
             padding: 10px;
             border-radius: 8px;
             margin-bottom: 10px;
         }
-
-        .log-input {
-            width: 90px;
-            text-align: center;
-        }
+        .log-input { width: 90px; text-align: center; }
     </style>
 
     <!-- HEADER -->
@@ -44,8 +37,8 @@
     <div class="sidebar-section">
         <div class="sidebar-label">Status</div>
 
-        <select class="form-select"
-                th:attr="onchange=|updateStatus(${task.id}, this.value)|">
+        <select class="form-select status-field"
+                th:data-id="${task.id}">
             <option value="TODO"        th:selected="${task.status == 'TODO'}">To Do</option>
             <option value="IN_PROGRESS" th:selected="${task.status == 'IN_PROGRESS'}">In Progress</option>
             <option value="DONE"        th:selected="${task.status == 'DONE'}">Done</option>
@@ -57,9 +50,9 @@
         <div class="sidebar-label">Data limită</div>
 
         <input type="date"
-               class="form-control"
-               th:value="${task.dueDate}"
-               th:attr="onchange=|updateDueDate(${task.id}, this.value)|">
+               class="form-control due-field"
+               th:data-id="${task.id}"
+               th:value="${task.dueDate}">
     </div>
 
     <!-- TIME -->
@@ -70,23 +63,20 @@
             <span class="time-badge">
                 Estimat: <span th:text="${task.formattedEstimated}"></span>
             </span>
-
             <span class="time-badge">
                 Logat: <span th:text="${task.formattedLogged}"></span>
             </span>
-
             <span class="time-badge">
                 Rămase: <span th:text="${task.formattedRemaining}"></span>
             </span>
         </div>
 
-        <!-- Log Hours -->
         <div class="d-flex gap-2 mt-2">
             <input id="logHoursInput" class="form-control log-input"
                    type="number" min="0.1" step="0.1" placeholder="ex: 1.5">
 
-            <button class="btn btn-primary"
-                    th:attr="onclick=|logHours(${task.id})|">
+            <button class="btn btn-primary log-btn"
+                    th:data-id="${task.id}">
                 Loghează
             </button>
         </div>
@@ -113,12 +103,11 @@
             <div th:text="${c.content}"></div>
         </div>
 
-        <!-- Add comment -->
         <textarea id="commentText" class="form-control"
                   placeholder="Adaugă comentariu..." rows="2"></textarea>
 
-        <button class="btn btn-secondary mt-2"
-                th:attr="onclick=|addComment(${task.id})|">
+        <button class="btn btn-secondary mt-2 comment-btn"
+                th:data-id="${task.id}">
             Trimite
         </button>
     </div>
@@ -128,43 +117,49 @@
 <!-- JS -->
 <script>
 
-    function refreshSidebar(taskId) {
-        fetch(`/tasks/${taskId}/sidebar`)
-            .then(r => r.text())
-            .then(html => {
-                document.getElementById("sidebarContent").innerHTML = html;
-            });
-    }
+function refreshSidebar(taskId) {
+    fetch(`/tasks/${taskId}/sidebar`)
+        .then(r => r.text())
+        .then(html => {
+            document.getElementById("sidebarContent").innerHTML = html;
+        });
+}
 
-    function logHours(taskId) {
+document.querySelectorAll(".status-field").forEach(el => {
+    el.addEventListener("change", () => {
+        fetch(`/tasks/${el.dataset.id}/sidebar/status?value=${el.value}`, { method: "POST" })
+            .then(() => refreshSidebar(el.dataset.id));
+    });
+});
+
+document.querySelectorAll(".due-field").forEach(el => {
+    el.addEventListener("change", () => {
+        fetch(`/tasks/${el.dataset.id}/sidebar/duedate?date=${el.value}`, { method: "POST" })
+            .then(() => refreshSidebar(el.dataset.id));
+    });
+});
+
+document.querySelectorAll(".log-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        const taskId = btn.dataset.id;
         const h = document.getElementById("logHoursInput").value;
         if (!h || h <= 0) return;
 
-        fetch(`/tasks/${taskId}/log-hours?hours=` + h, {
-            method: "POST"
-        }).then(() => refreshSidebar(taskId));
-    }
+        fetch(`/tasks/${taskId}/sidebar/log?hours=${h}`, { method: "POST" })
+            .then(() => refreshSidebar(taskId));
+    });
+});
 
-    function updateStatus(taskId, value) {
-        fetch(`/tasks/${taskId}/status?value=` + value, {
-            method: "POST"
-        }).then(() => refreshSidebar(taskId));
-    }
-
-    function updateDueDate(taskId, date) {
-        fetch(`/tasks/${taskId}/due-date?date=` + date, {
-            method: "POST"
-        }).then(() => refreshSidebar(taskId));
-    }
-
-    function addComment(taskId) {
+document.querySelectorAll(".comment-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        const taskId = btn.dataset.id;
         const text = document.getElementById("commentText").value;
         if (!text.trim()) return;
 
-        fetch(`/tasks/${taskId}/comments?content=` + encodeURIComponent(text), {
-            method: "POST"
-        }).then(() => refreshSidebar(taskId));
-    }
+        fetch(`/tasks/${taskId}/sidebar/comment?content=${encodeURIComponent(text)}`, { method: "POST" })
+            .then(() => refreshSidebar(taskId));
+    });
+});
 
 </script>
 

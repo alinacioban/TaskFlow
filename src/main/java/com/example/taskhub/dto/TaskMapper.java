@@ -53,4 +53,35 @@ public class TaskMapper {
         if (minutes == 0) return hours + "h";
         return hours + "h " + minutes + "m";
     }
+
+    public static TaskUpdateDTO toUpdate(Task t) {
+    if (t == null) return null;
+
+    TaskUpdateDTO dto = new TaskUpdateDTO();
+
+    dto.setId(t.getId());
+    dto.setProjectId(t.getProject().getId());
+
+    dto.setTitle(t.getTitle());
+    dto.setDescription(t.getDescription());
+
+    dto.setEstimatedHours(t.getEstimatedHours());
+    dto.setLoggedHours(t.getLoggedHours());
+    dto.setRemainingHours(t.getRemainingHours());
+
+    dto.setLabels(t.getLabels());
+    dto.setComponents(t.getComponents());
+    dto.setSprint(t.getSprint());
+
+    dto.setType(t.getType().name());
+    dto.setPriority(t.getPriority().name());
+    dto.setStatus(t.getStatus().name());
+
+    dto.setAssigneeId(t.getAssignee() != null ? t.getAssignee().getId() : null);
+    dto.setReporterId(t.getReporter() != null ? t.getReporter().getId() : null);
+
+    dto.setDueDate(t.getDueDate());
+
+    return dto;
+}
 }

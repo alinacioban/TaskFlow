@@ -55,4 +55,9 @@ public class ProjectService {
         }
         projectRepository.deleteById(id);
     }
+
+    public List<Project> findAll() {
+    return projectRepository.findAll();
+}
+
 }
